@@ -1,0 +1,121 @@
+# Build stage
+#
+# This stage builds pixman with enabled coverage for all supported
+# architectures.
+#
+# Some targets don't support atomic profile update, so to decrease the number of
+# gcov errors, they need to be built without OpenMP (single threaded) by adding
+# `-Dopenmp=disabled` Meson argument.
+
+variables:
+  # Used in test stage as well.
+  BUILD_DIR: build
+
+# Applicable to all build targets.
+
+.build:all:
+  stage: build
+  variables:
+    # These are for job groups to fill.
+    GROUP_C_ARGS: ""
+    GROUP_MESON_ARGS: ""
+    # These are for jobs to fill if needed.
+    JOB_C_ARGS: ""
+    JOB_MESON_ARGS: ""
+  script:
+    - meson setup ${BUILD_DIR}
+        -Dc_args="-DCI_HAS_ALL_MIPS_CPU_FEATURES ${GROUP_C_ARGS} ${JOB_C_ARGS}"
+        ${GROUP_MESON_ARGS} ${JOB_MESON_ARGS}
+    - meson compile -C ${BUILD_DIR}
+  artifacts:
+    paths:
+      - ${BUILD_DIR}/
+
+# Code coverage target build.
+
+.codecov-build:all:
+  extends: .build:all
+  variables:
+    GROUP_C_ARGS: "-fprofile-update=atomic"
+    GROUP_MESON_ARGS: "-Db_coverage=true"
+
+codecov-build:linux:386:
+  extends:
+    - .codecov-build:all
+    - .codecov:linux:386
+
+codecov-build:linux:amd64:
+  extends:
+    - .codecov-build:all
+    - .codecov:linux:amd64
+
+codecov-build:linux:arm:v5:
+  extends:
+    - .codecov-build:all
+    - .codecov:linux:arm:v5
+  variables:
+    JOB_MESON_ARGS: -Dopenmp=disabled
+
+codecov-build:linux:arm:v7:
+  extends:
+    - .codecov-build:all
+    - .codecov:linux:arm:v7
+
+codecov-build:linux:arm64:v8:
+  extends:
+    - .codecov-build:all
+    - .codecov:linux:arm64:v8
+
+codecov-build:linux:mips64el:
+  extends:
+    - .codecov-build:all
+    - .codecov:linux:mips64el
+
+codecov-build:linux:mipsel:
+  extends:
+    - .codecov-build:all
+    - .codecov:linux:mipsel
+  variables:
+    JOB_MESON_ARGS: -Dopenmp=disabled
+
+codecov-build:linux:ppc64le:
+  extends:
+    - .codecov-build:all
+    - .codecov:linux:ppc64le
+
+codecov-build:linux:riscv64:
+  extends:
+    - .codecov-build:all
+    - .codecov:linux:riscv64
+  variables:
+    JOB_C_ARGS: "-march=rv64gcv"
+
+# Platform coverage target build.
+
+.pltcov-build:all:
+  extends:
+    - .build:all
+  variables:
+    CROSS_FILE_NAME: ${PLATFORM}.meson
+    GROUP_MESON_ARGS: "--cross-file .gitlab-ci.d/pltcov/meson-cross/${CROSS_FILE_NAME}"
+
+pltcov-build:linux:
+  extends:
+    - .pltcov-build:all
+    - .pltcov:linux
+  parallel:
+    matrix:
+      - PLATFORM:
+        - linux-mips
+        - linux-ppc
+        - linux-ppc64
+
+pltcov-build:windows:
+  extends:
+    - .pltcov-build:all
+    - .pltcov:windows
+  parallel:
+    matrix:
+      - PLATFORM:
+        - windows-386
+        - windows-amd64
