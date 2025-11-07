@@ -13,6 +13,7 @@ static const pixman_format_code_t image_formats[] =
 {
     PIXMAN_rgba_float,
     PIXMAN_rgb_float,
+    PIXMAN_a16b16g16r16,
     PIXMAN_a8r8g8b8,
     PIXMAN_x8r8g8b8,
     PIXMAN_r5g6b5,
@@ -421,6 +422,8 @@ create_random_bits_image (alpha_preference_t alpha_preference)
     pixman_image_set_destroy_function (image, destroy, indexed);
     pixman_image_set_accessors (image, read_func, write_func);
     pixman_image_set_filter (image, filter, coefficients, n_coefficients);
+
+    free (coefficients);
 
     return image;
 }
