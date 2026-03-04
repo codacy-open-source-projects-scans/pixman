@@ -39,6 +39,12 @@ workflow:
     # A standard set of GitLab CI triggers (i.e., MR, schedule, default branch,
     # and tag).
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      changes:
+        paths:
+          - .gitlab-ci.d/**/*
+          - demos/**/*
+          - pixman/**/*
+          - test/**/*
     - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
       when: never
     - if: $CI_PIPELINE_SOURCE == 'schedule'
